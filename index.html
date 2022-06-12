@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>I love you a latte ☕</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #eee;
+    }
+
+    .workflow {
+      background: #eee;
+      color: #0006;
+      border-bottom: 1px solid #0003;
+    }
+
+    .workflow .label {
+      font-weight: bold;
+      padding: 1rem;
+    }
+
+    .workflow.active {
+      background: #333;
+      color: #fff;
+    }
+    .workflow.active .label {
+      background: #222;
+    }
+
+    .workflow .checklist {}
+
+    label {
+      display: flex;
+      padding: 1rem 1rem 1rem 0.6rem;
+      border-top: 1px solid #fff2;
+      color: #fffc;
+    }
+
+    label.active {
+      background: #345;
+    }
+
+    label div {
+      padding: 0 0.25rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+  </div>
+  <script>
+    const workflows = {
+      preflight: {
+        label: "Preflight checklist", steps: [
+          {
+            name: "water-check",
+            label: "Check water level and refill if necessary",
+            details: "Remember to use filter water and not tap water"
+          },
+          {
+            name: "drip-tray-check",
+            label: "Check drip tray and empty if full",
+            details: "Look for floater bar above grill"
+          },
+          {
+            name: "power-on",
+            label: "Power on the device"
+          },
+          {
+            name: "flush",
+            label: "Rinse group head and portafilter using single shot mode and wipe dry using paper towel"
+          },
+          {
+            name: "check-clean",
+            label: "Check that the following are clean: <br>- dosing cup <br>- WDT tool <br>- distribution ring <br>- puck screen<br>- milk pitcher",
+          }
+        ]
+      },
+      dose: {
+        label: "Dosing", steps: [
+          {
+            name: "dose",
+            label: "Add beans to grinder. Fill until beans reach bottom of stopper for single dose."
+          }, {
+            name: "grind",
+            label: "Grind into dosing cup.",
+          },
+          {
+            name: "fill",
+            label: "Place dosing ring on portafilter and pour grounds into portafilter.",
+          },
+          {
+            name: "wdt",
+            label: "Use WDT tool to mix grounds and break up clumps",
+          },
+          {
+            name: "settle",
+            label: "Tap portafilter on counter to settle grounds. Remove dosing ring.",
+          },
+          {
+            name: "tamp",
+            label: "Use distribution tool to flatten grounds and turn over tool to tamp.",
+          },
+          {
+            name: "screen",
+            label: "Place puck screen in portafilter.",
+          },
+          {
+            name: "wipe",
+            label: "Blow/wipe any excess grounds off of portafilter edges and attach portafilter to group head.",
+          },
+        ]
+      },
+      steam: {
+        label: "Milk steaming", steps: [
+          {
+            name: "pour",
+            label: "Pour cold milk into pitcher until level with spout bottom."
+          },
+          {
+            name: "steam-on",
+            label: "Turn dial towards self to turn on steam wand. Wait until steam is hissing."
+          }, {
+            name: "steam",
+            label: "Inject bubbles for 8 seconds, then submerge to mix until hot. Turn dial upright to stop. Set aside."
+          },
+        ]
+      },
+      brew: {
+        label: "Brew espresso", steps: [
+          {
+            name: "brew",
+            label: "Place cup under portafilter and press the double shot button."
+          }
+        ]
+      },
+      combine: {
+        label: "Pour steamed milk", steps: [
+          {
+            name: "prepare-milk",
+            label: "Tap pitcher to remove large bubbles and swirl until consistency is like melted ice cream."
+          },
+          {
+            name: "pour-milk",
+            label: "Hold cup with handle facing body, and pour steamed milk. Set aside."
+          },
+        ]
+      },
+      clean: {
+        label: "Clean", steps: [
+          {
+            name: "clean-portafilter",
+            label: "Tap portafilter on knockbox to dislodge screen and puck"
+          },
+          {
+            name: "wipe",
+            label: "Use wet towel to wipe portafilter, group head, milk wand, and drip tray"
+          },
+        ]
+      },
+      enjoy: {
+        label: "Enjoy", steps: [
+          {
+            name: "enjoy",
+            label: "Enjoy your drink. I love you a latte ❤️"
+          },
+          {
+            name: "rinse",
+            label: "Rinse cup."
+          },
+        ]
+      },
+    };
+
+    const app = {};
+
+    app.stages = Object.keys(workflows);
+    app.stageIndex = 0;
+    app.workflows = workflows;
+
+    app.completed = {};
+
+    app.completeStep = (stage, index) => {
+      if (!app.completed[stage]) {
+        app.completed[stage] = new Set();
+      }
+      app.completed[stage].add(index);
+      const numSteps = app.workflows[stage].steps.length;
+      const completed = app.completed[stage].size;
+      if (completed === numSteps) {
+        if (app.stageIndex < app.stages.length - 1) {
+          app.stageIndex++;
+        }
+      }
+      app.render();
+    };
+
+    app.removeStep = (stage, index) => {
+      if (!app.completed[stage]) {
+        app.completed[stage] = new Set();
+      }
+      app.completed[stage].delete(index);
+    }
+
+
+    app.renderSteps = (stage) => {
+      const workflow = app.workflows[stage];
+      const container = document.createElement("div");
+      workflow.steps.forEach((step, index) => {
+        const stepContainer = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = false;
+        if (app.completed[stage]) {
+          if (app.completed[stage].has(index)) {
+            checkbox.checked = "checked";
+            stepContainer.className = "active";
+          }
+        }
+        checkbox.onchange = (ev) => {
+          if (!app.completed[stage]) {
+            app.completed[stage] = new Set();
+          }
+          if (checkbox.checked) {
+            app.completeStep(stage, index);
+          } else {
+            app.removeStep(stage, index);
+          }
+          app.render();
+        };
+        const label = document.createElement("div");
+        label.innerHTML = step.label;
+        stepContainer.appendChild(checkbox);
+        stepContainer.appendChild(label);
+        container.appendChild(stepContainer);
+      });
+      return container;
+    }
+
+    app.renderStage = (stage) => {
+      const active = stage === app.stages[app.stageIndex];
+      const workflow = app.workflows[stage];
+      if (active) {
+        const div = document.createElement("div");
+        div.className = "workflow active";
+        const label = document.createElement("div");
+        label.innerText = workflow.label;
+        label.className = "label";
+        div.appendChild(label);
+        const steps = app.renderSteps(stage);
+        div.appendChild(steps);
+        return div;
+      }
+      const div = document.createElement("div");
+      div.innerHTML = `<div class="workflow"><div class="label">${workflow.label}</div></div>`;
+      return div;
+    }
+
+    app.render = () => {
+      const container = document.getElementById("app");
+      const workflow = workflows[app.stages[app.stageIndex]];
+      container.innerHTML = "";
+      app.stages.forEach(stage => {
+        const div = app.renderStage(stage);
+        container.appendChild(div);
+      })
+    }
+
+    app.render();
+  </script>
+</body>
+</htlm>
